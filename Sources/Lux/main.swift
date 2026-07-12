@@ -22,13 +22,17 @@ MainActor.assumeIsolated {
         }
         exit(0)
     }
-    if let i = args.firstIndex(of: "--set-brightness"), i + 1 < args.count, let v = Double(args[i + 1]) {
+    if let i = args.firstIndex(of: "--set-brightness"), i + 1 < args.count,
+        let v = Double(args[i + 1])
+    {
         let displays = DisplayManager.activeDisplays()
         DDCManager.shared.refresh(displays: displays)
         for d in displays {
             let ok = BrightnessController.setBrightness(v, for: d)
             let backend = BrightnessController.backend(for: d)
-            print("  • \(d.name): → \(Int((v * 100).rounded()))%  \(ok ? "ok" : "failed")  (\(backend.label))")
+            print(
+                "  • \(d.name): → \(Int((v * 100).rounded()))%  \(ok ? "ok" : "failed")  (\(backend.label))"
+            )
         }
         // DDC writes are coalesced on a background queue — give them a beat to flush.
         usleep(200_000)
@@ -48,9 +52,11 @@ MainActor.assumeIsolated {
         for d in displays {
             let cur = BrightnessController.currentBrightness(for: d)
             let ok = BrightnessController.setBrightness(cur, for: d)
-            print("  • \(d.name): write→\(Int((cur * 100).rounded()))% returned \(ok ? "ok ✅" : "failed ❌")  (\(BrightnessController.backend(for: d).label))")
+            print(
+                "  • \(d.name): write→\(Int((cur * 100).rounded()))% returned \(ok ? "ok ✅" : "failed ❌")  (\(BrightnessController.backend(for: d).label))"
+            )
         }
-        usleep(250_000) // let coalesced DDC writes flush
+        usleep(250_000)  // let coalesced DDC writes flush
         exit(0)
     }
     if args.contains("--probe-ddc") {
@@ -58,7 +64,9 @@ MainActor.assumeIsolated {
         let services = DDC.discoverServices()
         print("Found \(services.count) AV service(s):")
         for (i, s) in services.enumerated() {
-            print("  [\(i)] location=\(s.location) vendor=\(s.vendorID.map(String.init) ?? "?") product=\(s.productID.map(String.init) ?? "?") serial=\(s.serial.map(String.init) ?? "?")")
+            print(
+                "  [\(i)] location=\(s.location) vendor=\(s.vendorID.map(String.init) ?? "?") product=\(s.productID.map(String.init) ?? "?") serial=\(s.serial.map(String.init) ?? "?")"
+            )
         }
         for d in DisplayManager.activeDisplays() where !d.isBuiltin {
             print("\nDisplay \"\(d.name)\" (vendor=\(d.vendor) model=\(d.model)):")
@@ -83,9 +91,12 @@ MainActor.assumeIsolated {
         let registered = BuiltInBrightness.registerForChangeNotifications()
         print("registered: \(registered)")
         if let builtin = DisplayManager.activeDisplays().first(where: { $0.isBuiltin }),
-           let cur = BuiltInBrightness.get(builtin.id) {
+            let cur = BuiltInBrightness.get(builtin.id)
+        {
             let nudge: Float = cur >= 0.5 ? cur - 0.05 : cur + 0.05
-            print("nudging built-in \(Int(cur * 100))% → \(Int(nudge * 100))% to trigger the callback…")
+            print(
+                "nudging built-in \(Int(cur * 100))% → \(Int(nudge * 100))% to trigger the callback…"
+            )
             BuiltInBrightness.set(builtin.id, nudge)
             RunLoop.current.run(until: Date().addingTimeInterval(0.6))
             BuiltInBrightness.set(builtin.id, cur)
@@ -97,7 +108,9 @@ MainActor.assumeIsolated {
 
     if args.contains("--dump-macros") {
         for m in MacroStore.shared.macros {
-            print("  • \(m.signedPercent) → \(m.displayName)  [shortcut: \(m.shortcut?.displayString ?? "none")]")
+            print(
+                "  • \(m.signedPercent) → \(m.displayName)  [shortcut: \(m.shortcut?.displayString ?? "none")]"
+            )
         }
         print("(\(MacroStore.shared.macros.count) macro(s))")
         exit(0)
@@ -105,11 +118,15 @@ MainActor.assumeIsolated {
     if args.contains("--add-sample-macro") {
         let displays = DisplayManager.activeDisplays()
         if let d = displays.first(where: { !$0.isBuiltin }) ?? displays.first {
-            let mods = UInt32(controlKey | optionKey) // ⌃⌥
-            MacroStore.shared.add(Macro(displayKey: d.stableKey, displayName: d.name, step: 0.10,
-                                        shortcut: Macro.Shortcut(keyCode: 126, modifiers: mods, label: "↑")))
-            MacroStore.shared.add(Macro(displayKey: d.stableKey, displayName: d.name, step: -0.10,
-                                        shortcut: Macro.Shortcut(keyCode: 125, modifiers: mods, label: "↓")))
+            let mods = UInt32(controlKey | optionKey)  // ⌃⌥
+            MacroStore.shared.add(
+                Macro(
+                    displayKey: d.stableKey, displayName: d.name, step: 0.10,
+                    shortcut: Macro.Shortcut(keyCode: 126, modifiers: mods, label: "↑")))
+            MacroStore.shared.add(
+                Macro(
+                    displayKey: d.stableKey, displayName: d.name, step: -0.10,
+                    shortcut: Macro.Shortcut(keyCode: 125, modifiers: mods, label: "↓")))
             print("added ⌃⌥↑ / ⌃⌥↓ macros for \(d.name)")
         }
         exit(0)
@@ -138,6 +155,6 @@ MainActor.assumeIsolated {
     let app = NSApplication.shared
     let delegate = AppDelegate()
     app.delegate = delegate
-    app.setActivationPolicy(.accessory) // menu bar only, no Dock icon
+    app.setActivationPolicy(.accessory)  // menu bar only, no Dock icon
     app.run()
 }

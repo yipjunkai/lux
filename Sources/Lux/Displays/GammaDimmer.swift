@@ -22,9 +22,9 @@ enum GammaDimmer {
         let v = CGGammaValue(max(0.0, min(1.0, value)))
         let err = CGSetDisplayTransferByFormula(
             display,
-            0, v, 1,   // red:   min, max, gamma
-            0, v, 1,   // green: min, max, gamma
-            0, v, 1    // blue:  min, max, gamma
+            0, v, 1,  // red:   min, max, gamma
+            0, v, 1,  // green: min, max, gamma
+            0, v, 1  // blue:  min, max, gamma
         )
         guard err == .success else { return false }
         levels[display] = Double(v)

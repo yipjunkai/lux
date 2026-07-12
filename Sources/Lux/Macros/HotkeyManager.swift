@@ -11,7 +11,7 @@ final class HotkeyManager {
     private var macrosByID: [UInt32: Macro] = [:]
     private var nextID: UInt32 = 1
     private var handlerInstalled = false
-    private let signature: OSType = 0x4C555858 // 'LUXX'
+    private let signature: OSType = 0x4C55_5858  // 'LUXX'
 
     /// Re-register hotkeys for the given macros. Call whenever macros change.
     func reload(_ macros: [Macro]) {
@@ -63,9 +63,11 @@ final class HotkeyManager {
 }
 
 /// Carbon C callback — extracts the hot key id and dispatches to the manager.
-private func luxHotkeyHandler(_ call: EventHandlerCallRef?,
-                              _ event: EventRef?,
-                              _ userData: UnsafeMutableRawPointer?) -> OSStatus {
+private func luxHotkeyHandler(
+    _ call: EventHandlerCallRef?,
+    _ event: EventRef?,
+    _ userData: UnsafeMutableRawPointer?
+) -> OSStatus {
     var hotKeyID = EventHotKeyID()
     let err = GetEventParameter(
         event,

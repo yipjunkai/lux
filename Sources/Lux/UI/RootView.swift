@@ -14,7 +14,9 @@ struct RootView: View {
                 Image(systemName: "sun.max.fill")
                 Text("Lux").font(.headline)
                 Spacer()
-                Button { SettingsWindowController.shared.show() } label: {
+                Button {
+                    SettingsWindowController.shared.show()
+                } label: {
                     Image(systemName: "gearshape")
                 }
                 .buttonStyle(.plain)
@@ -34,13 +36,15 @@ struct RootView: View {
 
             Divider()
 
-            Toggle(isOn: Binding(
-                get: { launchAtLogin },
-                set: { on in
-                    LoginItem.setEnabled(on)
-                    launchAtLogin = LoginItem.isEnabled
-                }
-            )) {
+            Toggle(
+                isOn: Binding(
+                    get: { launchAtLogin },
+                    set: { on in
+                        LoginItem.setEnabled(on)
+                        launchAtLogin = LoginItem.isEnabled
+                    }
+                )
+            ) {
                 Text("Launch at login")
             }
             .toggleStyle(.switch)

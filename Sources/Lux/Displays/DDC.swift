@@ -16,12 +16,16 @@ enum DDC {
 
     // MARK: Runtime bindings to the private IOAVService API
 
-    private typealias CreateWithServiceFn = @convention(c) (CFAllocator?, io_service_t) -> Unmanaged<CFTypeRef>?
-    private typealias WriteI2CFn = @convention(c) (CFTypeRef, UInt32, UInt32, UnsafeMutableRawPointer?, UInt32) -> IOReturn
-    private typealias ReadI2CFn = @convention(c) (CFTypeRef, UInt32, UInt32, UnsafeMutableRawPointer?, UInt32) -> IOReturn
+    private typealias CreateWithServiceFn =
+        @convention(c) (CFAllocator?, io_service_t) -> Unmanaged<CFTypeRef>?
+    private typealias WriteI2CFn =
+        @convention(c) (CFTypeRef, UInt32, UInt32, UnsafeMutableRawPointer?, UInt32) -> IOReturn
+    private typealias ReadI2CFn =
+        @convention(c) (CFTypeRef, UInt32, UInt32, UnsafeMutableRawPointer?, UInt32) -> IOReturn
 
     private static let image = dlopen(nil, RTLD_NOW)
-    private static let createWithService = sym("IOAVServiceCreateWithService", CreateWithServiceFn.self)
+    private static let createWithService = sym(
+        "IOAVServiceCreateWithService", CreateWithServiceFn.self)
     private static let writeI2CFn = sym("IOAVServiceWriteI2C", WriteI2CFn.self)
     private static let readI2CFn = sym("IOAVServiceReadI2C", ReadI2CFn.self)
 
@@ -52,7 +56,8 @@ enum DDC {
 
         var iterator = io_iterator_t()
         let matching = IOServiceMatching("DCPAVServiceProxy")
-        guard IOServiceGetMatchingServices(kIOMainPortDefault, matching, &iterator) == KERN_SUCCESS else {
+        guard IOServiceGetMatchingServices(kIOMainPortDefault, matching, &iterator) == KERN_SUCCESS
+        else {
             return []
         }
         defer { IOObjectRelease(iterator) }
@@ -62,13 +67,14 @@ enum DDC {
             let location = stringProperty(entry, "Location") ?? "Unknown"
             let attrs = productAttributes(entry)
             if let unmanaged = createWithService(kCFAllocatorDefault, entry) {
-                out.append(AVService(
-                    ref: unmanaged.takeRetainedValue(),
-                    location: location,
-                    vendorID: attrs?.vendor,
-                    productID: attrs?.product,
-                    serial: attrs?.serial
-                ))
+                out.append(
+                    AVService(
+                        ref: unmanaged.takeRetainedValue(),
+                        location: location,
+                        vendorID: attrs?.vendor,
+                        productID: attrs?.product,
+                        serial: attrs?.serial
+                    ))
             }
             IOObjectRelease(entry)
             entry = IOIteratorNext(iterator)
@@ -80,8 +86,8 @@ enum DDC {
     static func service(for display: DisplayInfo, in services: [AVService]) -> CFTypeRef? {
         let externals = services.filter { $0.location.localizedCaseInsensitiveContains("external") }
         if let exact = externals.first(where: {
-            $0.vendorID.map { UInt32($0) } == display.vendor &&
-            $0.productID.map { UInt32($0) } == display.model
+            $0.vendorID.map { UInt32($0) } == display.vendor
+                && $0.productID.map { UInt32($0) } == display.model
         }) {
             return exact.ref
         }
@@ -93,7 +99,9 @@ enum DDC {
     // MARK: VCP read / write (brightness = 0x10)
 
     /// Read a VCP feature, returning (current, max), or nil if unsupported.
-    static func readVCP(_ service: CFTypeRef, code: UInt8, attempts: Int = 4) -> (current: UInt16, max: UInt16)? {
+    static func readVCP(_ service: CFTypeRef, code: UInt8, attempts: Int = 4) -> (
+        current: UInt16, max: UInt16
+    )? {
         guard let writeI2CFn, let readI2CFn else { return nil }
         var request: [UInt8] = [0x82, 0x01, code, 0]
         request[3] = 0x6e ^ 0x51 ^ request[0] ^ request[1] ^ request[2]
@@ -135,20 +143,30 @@ enum DDC {
     // MARK: IORegistry helpers
 
     private static func stringProperty(_ entry: io_registry_entry_t, _ key: String) -> String? {
-        guard let raw = IORegistryEntryCreateCFProperty(entry, key as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue() else {
+        guard
+            let raw = IORegistryEntryCreateCFProperty(
+                entry, key as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue()
+        else {
             return nil
         }
         return raw as? String
     }
 
-    private static func productAttributes(_ entry: io_registry_entry_t) -> (vendor: Int?, product: Int?, serial: Int?)? {
+    private static func productAttributes(_ entry: io_registry_entry_t) -> (
+        vendor: Int?, product: Int?, serial: Int?
+    )? {
         let options = IOOptionBits(kIORegistryIterateRecursively | kIORegistryIterateParents)
-        guard let raw = IORegistryEntrySearchCFProperty(entry, kIOServicePlane, "DisplayAttributes" as CFString, kCFAllocatorDefault, options),
-              let dict = raw as? [String: Any],
-              let product = dict["ProductAttributes"] as? [String: Any] else {
+        guard
+            let raw = IORegistryEntrySearchCFProperty(
+                entry, kIOServicePlane, "DisplayAttributes" as CFString, kCFAllocatorDefault,
+                options),
+            let dict = raw as? [String: Any],
+            let product = dict["ProductAttributes"] as? [String: Any]
+        else {
             return nil
         }
-        let vendor = (product["LegacyManufacturerID"] as? Int) ?? (product["ManufacturerID"] as? Int)
+        let vendor =
+            (product["LegacyManufacturerID"] as? Int) ?? (product["ManufacturerID"] as? Int)
         let productID = product["ProductID"] as? Int
         let serial = product["SerialNumber"] as? Int
         return (vendor, productID, serial)

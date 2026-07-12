@@ -67,7 +67,11 @@ private struct MacrosSettingsView: View {
             Divider().padding(.vertical, 10)
 
             HStack {
-                Button { addMacro() } label: { Label("Add Macro", systemImage: "plus") }
+                Button {
+                    addMacro()
+                } label: {
+                    Label("Add Macro", systemImage: "plus")
+                }
                 Spacer()
             }
         }
@@ -77,11 +81,12 @@ private struct MacrosSettingsView: View {
 
     private func addMacro() {
         let target = controller.items.first
-        store.add(Macro(
-            displayKey: target?.info.stableKey ?? "",
-            displayName: target?.info.name ?? "Display",
-            step: -0.10
-        ))
+        store.add(
+            Macro(
+                displayKey: target?.info.stableKey ?? "",
+                displayName: target?.info.name ?? "Display",
+                step: -0.10
+            ))
     }
 }
 
@@ -97,9 +102,9 @@ private struct MacroCard: View {
 
     // Direction derived purely from the sign of `step`.
     private var directionSymbol: String {
-        if current.step > 0 { return "sun.max.fill" }   // brighten
-        if current.step < 0 { return "moon.fill" }      // dim
-        return "circle"                                 // no-op
+        if current.step > 0 { return "sun.max.fill" }  // brighten
+        if current.step < 0 { return "moon.fill" }  // dim
+        return "circle"  // no-op
     }
     private var directionTint: Color {
         if current.step == 0 { return .secondary }
@@ -111,11 +116,14 @@ private struct MacroCard: View {
             captioned("Display") {
                 Picker("", selection: displayKeyBinding) {
                     ForEach(controller.items) { item in
-                        Label(item.info.name,
-                              systemImage: item.info.isBuiltin ? "laptopcomputer" : "display")
-                            .tag(item.info.stableKey)
+                        Label(
+                            item.info.name,
+                            systemImage: item.info.isBuiltin ? "laptopcomputer" : "display"
+                        )
+                        .tag(item.info.stableKey)
                     }
-                    if !controller.items.contains(where: { $0.info.stableKey == current.displayKey }) {
+                    if !controller.items.contains(where: { $0.info.stableKey == current.displayKey }
+                    ) {
                         Text("\(current.displayName) (off)").tag(current.displayKey)
                     }
                 }
@@ -154,23 +162,29 @@ private struct MacroCard: View {
 
             Spacer(minLength: 8)
 
-            Button(role: .destructive) { store.remove(macro) } label: {
+            Button(role: .destructive) {
+                store.remove(macro)
+            } label: {
                 Image(systemName: "trash")
             }
             .buttonStyle(.borderless)
             .foregroundStyle(.secondary)
-            .frame(maxHeight: .infinity, alignment: .center) // vertically centered in the card
+            .frame(maxHeight: .infinity, alignment: .center)  // vertically centered in the card
             .help("Delete macro")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10).strokeBorder(
+                Color.primary.opacity(0.08), lineWidth: 1))
     }
 
     /// A caption above each control — the System-Settings scan pattern.
     @ViewBuilder
-    private func captioned<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
+    private func captioned<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content)
+        -> some View
+    {
         VStack(alignment: .leading, spacing: 4) {
             Text(title.uppercased())
                 .font(.caption2).fontWeight(.semibold)
@@ -180,20 +194,25 @@ private struct MacroCard: View {
     }
 
     private var stepBinding: Binding<Double> {
-        Binding(get: { current.step }, set: {
-            var m = current
-            m.step = $0
-            store.update(m)
-        })
+        Binding(
+            get: { current.step },
+            set: {
+                var m = current
+                m.step = $0
+                store.update(m)
+            })
     }
 
     private var displayKeyBinding: Binding<String> {
-        Binding(get: { current.displayKey }, set: { key in
-            var m = current
-            m.displayKey = key
-            m.displayName = controller.items.first { $0.info.stableKey == key }?.info.name ?? m.displayName
-            store.update(m)
-        })
+        Binding(
+            get: { current.displayKey },
+            set: { key in
+                var m = current
+                m.displayKey = key
+                m.displayName =
+                    controller.items.first { $0.info.stableKey == key }?.info.name ?? m.displayName
+                store.update(m)
+            })
     }
 }
 
@@ -206,13 +225,15 @@ private struct GeneralSettingsView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("General").font(.title2).fontWeight(.semibold)
 
-            Toggle(isOn: Binding(
-                get: { launchAtLogin },
-                set: { on in
-                    LoginItem.setEnabled(on)
-                    launchAtLogin = LoginItem.isEnabled
-                }
-            )) {
+            Toggle(
+                isOn: Binding(
+                    get: { launchAtLogin },
+                    set: { on in
+                        LoginItem.setEnabled(on)
+                        launchAtLogin = LoginItem.isEnabled
+                    }
+                )
+            ) {
                 Text("Launch at login")
             }
             .toggleStyle(.switch)

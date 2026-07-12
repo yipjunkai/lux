@@ -2,9 +2,9 @@ import CoreGraphics
 
 /// Which mechanism is controlling a given display's brightness.
 enum BrightnessBackend {
-    case backlight   // built-in / Apple displays via DisplayServices — real backlight
-    case ddc         // external via DDC/CI — real backlight
-    case software    // gamma dimming — works anywhere, darkens the image
+    case backlight  // built-in / Apple displays via DisplayServices — real backlight
+    case ddc  // external via DDC/CI — real backlight
+    case software  // gamma dimming — works anywhere, darkens the image
 
     var label: String {
         switch self {

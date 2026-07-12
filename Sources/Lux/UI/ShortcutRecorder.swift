@@ -33,8 +33,8 @@ enum KeyTranslator {
     /// Function-key virtual key codes (F1–F20). These make good macro keys and
     /// are allowed as bare shortcuts (no modifier needed).
     static let functionKeyCodes: Set<UInt32> = [
-        122, 120, 99, 118, 96, 97, 98, 100, 101, 109, 103, 111, // F1–F12
-        105, 107, 113, 106, 64, 79, 80, 90,                     // F13–F20
+        122, 120, 99, 118, 96, 97, 98, 100, 101, 109, 103, 111,  // F1–F12
+        105, 107, 113, 106, 64, 79, 80, 90,  // F13–F20
     ]
 
     private static let specialKeys: [UInt32: String] = [
@@ -67,7 +67,9 @@ struct ShortcutRecorder: View {
             }
 
             if shortcut != nil && !recording {
-                Button { onChange(nil) } label: {
+                Button {
+                    onChange(nil)
+                } label: {
                     Image(systemName: "xmark.circle.fill")
                 }
                 .buttonStyle(.borderless)
@@ -86,14 +88,20 @@ struct ShortcutRecorder: View {
     private func start() {
         recording = true
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { event in
-            if event.keyCode == 53 { stop(); return nil } // Esc cancels
+            if event.keyCode == 53 {
+                stop()
+                return nil
+            }  // Esc cancels
             let keyCode = UInt32(event.keyCode)
             let modifiers = KeyTranslator.carbonModifiers(event.modifierFlags)
             // Accept anything with ⌘/⌥/⌃, or a bare function key.
             let modifierMask = UInt32(cmdKey) | UInt32(optionKey) | UInt32(controlKey)
             let hasModifier = modifiers & modifierMask != 0
-            guard hasModifier || KeyTranslator.functionKeyCodes.contains(keyCode) else { return nil }
-            let label = KeyTranslator.label(keyCode: keyCode, characters: event.charactersIgnoringModifiers)
+            guard hasModifier || KeyTranslator.functionKeyCodes.contains(keyCode) else {
+                return nil
+            }
+            let label = KeyTranslator.label(
+                keyCode: keyCode, characters: event.charactersIgnoringModifiers)
             onChange(Macro.Shortcut(keyCode: keyCode, modifiers: modifiers, label: label))
             stop()
             return nil

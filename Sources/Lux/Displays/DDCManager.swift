@@ -23,12 +23,15 @@ final class DDCManager {
     /// Re-scan AV services and read each external display's current/max brightness.
     /// Call at launch and whenever the display layout changes.
     func refresh(displays: [DisplayInfo]) {
-        guard DDC.isSupported else { entries.removeAll(); return }
+        guard DDC.isSupported else {
+            entries.removeAll()
+            return
+        }
         let services = DDC.discoverServices()
         var next: [CGDirectDisplayID: Entry] = [:]
         for display in displays where !display.isBuiltin {
             guard let ref = DDC.service(for: display, in: services),
-                  let (current, maxValue) = DDC.readVCP(ref, code: 0x10), maxValue > 0
+                let (current, maxValue) = DDC.readVCP(ref, code: 0x10), maxValue > 0
             else { continue }
             next[display.id] = Entry(
                 ref: ref,

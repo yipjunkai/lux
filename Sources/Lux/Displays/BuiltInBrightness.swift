@@ -10,7 +10,8 @@ import Foundation
 /// the build stays clean and everything degrades gracefully if a symbol is gone.
 enum BuiltInBrightness {
 
-    private typealias GetFn = @convention(c) (CGDirectDisplayID, UnsafeMutablePointer<Float>) -> Int32
+    private typealias GetFn =
+        @convention(c) (CGDirectDisplayID, UnsafeMutablePointer<Float>) -> Int32
     private typealias SetFn = @convention(c) (CGDirectDisplayID, Float) -> Int32
     private typealias RegisterFn = @convention(c) (UInt32, UInt64, DSBrightnessCallback) -> Int32
 
@@ -19,15 +20,18 @@ enum BuiltInBrightness {
         RTLD_NOW
     )
 
-    private static let getFn: GetFn? = handle
+    private static let getFn: GetFn? =
+        handle
         .flatMap { dlsym($0, "DisplayServicesGetBrightness") }
         .map { unsafeBitCast($0, to: GetFn.self) }
 
-    private static let setFn: SetFn? = handle
+    private static let setFn: SetFn? =
+        handle
         .flatMap { dlsym($0, "DisplayServicesSetBrightness") }
         .map { unsafeBitCast($0, to: SetFn.self) }
 
-    private static let registerFn: RegisterFn? = handle
+    private static let registerFn: RegisterFn? =
+        handle
         .flatMap { dlsym($0, "DisplayServicesRegisterForBrightnessChangeNotifications") }
         .map { unsafeBitCast($0, to: RegisterFn.self) }
 
@@ -66,12 +70,15 @@ enum BuiltInBrightness {
 /// C callback type for DisplayServices brightness notifications. The private
 /// API's exact argument layout is ambiguous across macOS versions, so we ignore
 /// the arguments entirely — any invocation simply means "re-read the built-ins".
-typealias DSBrightnessCallback = @convention(c) (UnsafeRawPointer?, UInt32, UInt32, UnsafeRawPointer?) -> Void
+typealias DSBrightnessCallback =
+    @convention(c) (UnsafeRawPointer?, UInt32, UInt32, UnsafeRawPointer?) -> Void
 
-private func luxBrightnessChangeCallback(_ refcon: UnsafeRawPointer?,
-                                         _ service: UInt32,
-                                         _ messageType: UInt32,
-                                         _ messageArgument: UnsafeRawPointer?) {
+private func luxBrightnessChangeCallback(
+    _ refcon: UnsafeRawPointer?,
+    _ service: UInt32,
+    _ messageType: UInt32,
+    _ messageArgument: UnsafeRawPointer?
+) {
     DispatchQueue.main.async {
         DisplayController.shared.builtInBrightnessChanged()
     }

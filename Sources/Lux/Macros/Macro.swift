@@ -7,8 +7,8 @@ struct Macro: Identifiable, Codable, Equatable {
     /// A global keyboard shortcut, stored as Carbon key code + modifier mask.
     struct Shortcut: Codable, Equatable {
         var keyCode: UInt32
-        var modifiers: UInt32   // Carbon mask (cmdKey / optionKey / controlKey / shiftKey)
-        var label: String       // display label for the key, e.g. "↑", "B", "F13"
+        var modifiers: UInt32  // Carbon mask (cmdKey / optionKey / controlKey / shiftKey)
+        var label: String  // display label for the key, e.g. "↑", "B", "F13"
     }
 
     var id = UUID()

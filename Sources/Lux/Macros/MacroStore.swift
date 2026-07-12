@@ -21,7 +21,8 @@ final class MacroStore: ObservableObject {
 
     func load() {
         if let data = try? Data(contentsOf: fileURL),
-           let decoded = try? JSONDecoder().decode([Macro].self, from: data) {
+            let decoded = try? JSONDecoder().decode([Macro].self, from: data)
+        {
             macros = decoded
         }
         HotkeyManager.shared.reload(macros)
@@ -34,7 +35,10 @@ final class MacroStore: ObservableObject {
         HotkeyManager.shared.reload(macros)
     }
 
-    func add(_ macro: Macro) { macros.append(macro); persist() }
+    func add(_ macro: Macro) {
+        macros.append(macro)
+        persist()
+    }
 
     func remove(_ macro: Macro) {
         macros.removeAll { $0.id == macro.id }

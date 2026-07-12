@@ -37,7 +37,9 @@ enum DisplayManager {
         // Map display IDs to NSScreen so we can read human-friendly names.
         var screensByID: [CGDirectDisplayID: NSScreen] = [:]
         for screen in NSScreen.screens {
-            if let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber {
+            if let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")]
+                as? NSNumber
+            {
                 screensByID[CGDirectDisplayID(number.uint32Value)] = screen
             }
         }
@@ -68,7 +70,9 @@ enum DisplayManager {
         print("Detected \(displays.count) display(s):")
         for d in displays {
             let kind = d.isBuiltin ? "built-in" : "external"
-            print("  • \(d.name)  [\(kind)]  id=\(d.id)  \(d.width)×\(d.height)  vendor=\(d.vendor) model=\(d.model)")
+            print(
+                "  • \(d.name)  [\(kind)]  id=\(d.id)  \(d.width)×\(d.height)  vendor=\(d.vendor) model=\(d.model)"
+            )
         }
     }
 }
