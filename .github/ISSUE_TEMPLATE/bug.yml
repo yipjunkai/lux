@@ -1,0 +1,61 @@
+name: Bug report
+description: A crash, UI bug, or incorrect behavior. If a specific monitor won't dim via hardware, use the display-compatibility template instead.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One sentence describing the bug.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where did this happen?
+      options:
+        - Menu bar UI / sliders
+        - Settings window
+        - Macros / global hotkeys
+        - Display detection
+        - Brightness control (built-in)
+        - Brightness control (external / DDC)
+        - Gamma / software dimming
+        - Launch at login
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: What did you do, and what happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Lux version
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: mac
+    attributes:
+      label: Mac model + macOS version
+      placeholder: e.g. MacBook Pro M3, macOS 14.5
+    validations:
+      required: true
+  - type: textarea
+    id: displays
+    attributes:
+      label: Displays involved
+      description: Built-in and/or external — model, and how each is connected (HDMI / DisplayPort / USB-C / Thunderbolt / dock).
+    validations:
+      required: false

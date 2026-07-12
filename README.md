@@ -1,5 +1,7 @@
 # Lux
 
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
+
 A native macOS menu bar app for controlling the brightness of **all your displays** —
 built-in and external — with time-based automation and custom macro buttons.
 
@@ -9,7 +11,7 @@ built-in and external — with time-based automation and custom macro buttons.
 > Macros are triggered by **global hotkeys**. Next: automation (Phase 2).
 >
 > **Locked:** native **Swift** (SwiftUI + AppKit), **Swift Package Manager**, targeting
-> Apple Silicon / macOS 14+. Open-source (MIT proposed), distributed as a
+> Apple Silicon / macOS 14+. Open-source (dual **MIT OR Apache-2.0**), distributed as a
 > Developer-ID-signed **Homebrew Cask**.
 
 ---
@@ -89,6 +91,40 @@ via Carbon need none. (Ambient-light-sensor reading, if we add it, also needs no
 
 ---
 
+## Project structure
+
+```text
+lux/
+├── Package.swift                       # SPM manifest — executable target, macOS 14+
+├── Info.plist                          # LSUIElement (menu bar app, no Dock icon)
+├── justfile                            # build / run / diagnostics recipes
+├── Sources/Lux/
+│   ├── main.swift                      # entry point + CLI diagnostic flags
+│   ├── App/                            # lifecycle
+│   │   ├── AppDelegate.swift           #   menu bar setup + wiring
+│   │   ├── LoginItem.swift             #   launch-at-login (SMAppService)
+│   │   └── SettingsWindowController.swift
+│   ├── Displays/                       # display enumeration + brightness control
+│   │   ├── DisplayManager.swift        #   enumerate displays, match to control services
+│   │   ├── DisplayController.swift     #   per-display coordination
+│   │   ├── BrightnessController.swift  #   unified brightness entry point
+│   │   ├── DDC.swift                   #   DDC/CI VCP codes over I2C
+│   │   ├── DDCManager.swift            #   per-arch I2C transport (IOAVService / IOFramebuffer)
+│   │   ├── BuiltInBrightness.swift     #   DisplayServices (built-in / Apple displays)
+│   │   └── GammaDimmer.swift           #   software gamma-dimming fallback
+│   ├── Macros/                         # global-hotkey macros
+│   │   ├── HotkeyManager.swift         #   Carbon RegisterEventHotKey (no permissions)
+│   │   ├── Macro.swift                 #   model
+│   │   └── MacroStore.swift            #   JSON persistence
+│   └── UI/                             # SwiftUI
+│       ├── RootView.swift              #   menu bar popover (sliders, macros)
+│       ├── SettingsView.swift          #   macro configuration
+│       └── ShortcutRecorder.swift      #   hotkey capture
+└── .github/                            # CI, security policy, issue/PR templates
+```
+
+---
+
 ## Build & run
 
 Requires the Xcode toolchain (Swift 6+) and [`just`](https://github.com/casey/just)
@@ -123,13 +159,11 @@ A one-command install, fully automated from a git tag:
 4. **Install** — Homebrew Cask, starting from a personal tap:
 
    ```bash
-   brew install --cask junkai/tap/lux
+   brew install --cask yipjunkai/lux/lux
    ```
 
    Graduate to the official `homebrew/cask` (`brew install --cask lux`) once the
    project is established.
-
-**License:** MIT (proposed — Apache-2.0 or GPL-3.0 also on the table).
 
 ---
 
@@ -140,7 +174,7 @@ Still to settle (they shape the Phase 2/3 data model — not blocking Phase 1):
 1. **Time automation style** — fixed schedule, sun-based ramp, ambient-reactive, or none.
 2. **Macro power** — brightness presets only, or full monitor control / sequences / hotkeys.
 
-_Resolved: language (Swift), build setup (SPM)._
+_Resolved: language (Swift), build setup (SPM), license (dual **MIT OR Apache-2.0**)._
 
 ---
 
@@ -149,3 +183,13 @@ _Resolved: language (Swift), build setup (SPM)._
 Technical approach informed by [MonitorControl](https://github.com/MonitorControl/MonitorControl)
 and `m1ddc` — the reference implementations for DDC/CI on macOS. Lux's focus is the
 automation + macro layer on top of solid multi-display control.
+
+---
+
+## License
+
+Dual-licensed under [MIT](LICENSE-MIT) or [Apache 2.0](LICENSE-APACHE), at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in **Lux** by you, as defined in the Apache-2.0 license, shall be
+dually licensed as above, without any additional terms or conditions.

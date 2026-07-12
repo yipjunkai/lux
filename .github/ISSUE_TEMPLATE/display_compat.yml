@@ -1,0 +1,61 @@
+name: Display compatibility report
+description: Report how a specific monitor behaves with Lux — especially if hardware brightness (DDC) doesn't work.
+labels: ["display-compat"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        DDC/CI support varies enormously by monitor, cable, and dock. These reports
+        help map what works. Please run `just probe` and `just list` first.
+  - type: input
+    id: display
+    attributes:
+      label: Display model
+      placeholder: e.g. Dell U2720Q, LG 27GN950
+    validations:
+      required: true
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Connection
+      options:
+        - HDMI (direct)
+        - DisplayPort (direct)
+        - USB-C / Thunderbolt (direct)
+        - Via dock / hub
+        - Via adapter (e.g. USB-C → HDMI)
+    validations:
+      required: true
+  - type: input
+    id: mac
+    attributes:
+      label: Mac model + macOS version
+      placeholder: e.g. Mac mini M2, macOS 14.5
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: What happens?
+      options:
+        - Hardware brightness works (real backlight control)
+        - Falls back to gamma dimming (image darkens, backlight unchanged)
+        - No brightness control at all
+        - Detected but wrong / erratic
+    validations:
+      required: true
+  - type: textarea
+    id: probe
+    attributes:
+      label: Diagnostics output
+      description: Paste the output of `just probe` and `just list`.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything else — dock model, cable type, whether other apps (e.g. MonitorControl) can control it.
+    validations:
+      required: false
