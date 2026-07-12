@@ -26,6 +26,14 @@ jobs:
     name: Detect changes
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      # paths-filter lists a pull request's changed files via the GitHub API,
+      # which needs pull-requests: read. The top-level contents: read alone
+      # yields "Resource not accessible by integration" on every PR (the push
+      # path uses local git and is unaffected). Read-only, so it is also granted
+      # under Dependabot's restricted token.
+      contents: read
+      pull-requests: read
     outputs:
       # workflow_dispatch is a human explicitly requesting a run — never gate it.
       code: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.code }}
