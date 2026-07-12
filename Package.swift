@@ -18,6 +18,14 @@ let package = Package(
                 // concurrency. We can graduate to .v6 once the hardware layer is stable.
                 .swiftLanguageMode(.v5)
             ]
+        ),
+        .testTarget(
+            name: "LuxTests",
+            dependencies: ["Lux"],
+            path: "Tests/LuxTests",
+            swiftSettings: [
+                .swiftLanguageMode(.v5)
+            ]
         )
     ]
 )

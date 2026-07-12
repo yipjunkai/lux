@@ -1,0 +1,138 @@
+name: Verify Code
+
+on:
+  # No paths-ignore: branch protection requires the "ci-passed" check, which
+  # would never report on a paths-ignored (docs-only) PR and deadlock the merge.
+  # Instead the "changes" job detects docs-only changes and the heavy Swift job
+  # skips itself, while ci-passed still runs and reports.
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  # Cancel superseded runs on PRs, but never on main: every main commit keeps
+  # its own verdict — a cancelled run leaves a commit unbisectable.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # Detect whether any non-docs file changed; the Swift job gates on this so a
+  # docs-only PR skips build/test/lint while ci-passed still reports.
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      # workflow_dispatch is a human explicitly requesting a run — never gate it.
+      code: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.code }}
+    steps:
+      # paths-filter resolves pull_request events via the GitHub API but uses
+      # local git for push (and dispatch) events, so the repo must be checked
+      # out first — without it, pushes to main fail with git exit 128.
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        id: filter
+        with:
+          # 'every': a file counts as code only if it matches ALL patterns —
+          # '**' AND each negated docs glob. Under the default 'some', '**'
+          # matches everything and the negations are dead letters.
+          predicate-quantifier: "every"
+          filters: |
+            code:
+              - '**'
+              - '!**.md'
+              - '!LICENSE*'
+              - '!.github/ISSUE_TEMPLATE/**'
+              - '!.github/PULL_REQUEST_TEMPLATE.md'
+
+  secret-scanning:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Full history so TruffleHog can scan the whole push range, not just
+          # the tip commit (and so it doesn't choke when base == head).
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Secret Scanning
+        uses: trufflesecurity/trufflehog@30d5bb91af1a771378349dbbb0c82129392acf70 # v3.95.6
+        with:
+          extra_args: --results=verified,unknown
+
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: actionlint
+        # Version-pinned and checksum-verified: a tampered release asset fails
+        # sha256sum -c instead of running inside the lint gate. Deliberately a
+        # manual pin (no Dependabot ecosystem covers it); it runs on every push,
+        # so a stale/broken pin is loud.
+        run: |
+          curl -sL -o actionlint.tar.gz \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  actionlint.tar.gz" | sha256sum -c
+          tar -xzf actionlint.tar.gz actionlint
+          ./actionlint -color
+
+  swift:
+    name: Swift (build · test · lint)
+    # One macOS job (rather than three): the runner is ~10x the cost of Linux and
+    # the Xcode toolchain setup dominates wall-clock, so a single setup running
+    # all three checks is far cheaper than three parallel jobs. build → test →
+    # lint order surfaces the most important failure first.
+    needs: changes
+    if: ${{ needs.changes.outputs.code != 'false' }}
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          # latest-stable guarantees a Swift 6 toolchain (needed for the bundled
+          # `swift format` subcommand). Pin to a specific Xcode for full
+          # determinism once the runner image's versions are known.
+          xcode-version: latest-stable
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+      - name: Build
+        run: just build
+      - name: Test
+        run: just test
+      - name: Lint (swift-format)
+        run: just lint
+
+  ci-passed:
+    # Single check that branch protection can require, instead of listing each
+    # job by name. Succeeds only if all needed jobs succeeded or were skipped;
+    # fails if any failed or was cancelled. Runs even on partial failures.
+    name: ci-passed
+    if: ${{ always() }}
+    needs: [changes, secret-scanning, actionlint, swift]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Aggregate required-job results
+        env:
+          NEEDS_RESULT: ${{ toJSON(needs) }}
+        run: |
+          set -e
+          echo "$NEEDS_RESULT" | jq -r 'to_entries[] | "\(.key)\t\(.value.result)"'
+          if echo "$NEEDS_RESULT" | jq -e 'to_entries[] | select(.value.result == "failure" or .value.result == "cancelled")' > /dev/null; then
+            echo "::error::At least one required job failed or was cancelled."
+            exit 1
+          fi
+          echo "All required jobs passed."

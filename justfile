@@ -13,6 +13,18 @@ default:
 build:
     swift build
 
+# Run the test suite
+test:
+    swift test
+
+# Check formatting with swift-format (CI runs this — must pass)
+lint:
+    swift format lint --strict --recursive Sources Tests
+
+# Auto-format the code in place
+format:
+    swift format --in-place --recursive Sources Tests
+
 # Assemble Lux.app (ad-hoc signed) — the menu bar app bundle
 bundle:
     #!/usr/bin/env bash
