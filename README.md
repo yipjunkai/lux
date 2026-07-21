@@ -1,5 +1,8 @@
 # Lux
 
+[![CI](https://github.com/yipjunkai/lux/actions/workflows/verify.yml/badge.svg)](https://github.com/yipjunkai/lux/actions/workflows/verify.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/yipjunkai/lux/badge)](https://scorecard.dev/viewer/?uri=github.com/yipjunkai/lux)
+[![Release](https://img.shields.io/github/v/release/yipjunkai/lux?sort=semver)](https://github.com/yipjunkai/lux/releases)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
 A native macOS menu bar app for controlling the brightness of **all your displays** —
@@ -147,23 +150,37 @@ just probe               # probe external displays for DDC support
 just restore             # undo software (gamma) dimming
 ```
 
-## Distribution (planned)
+## Distribution
 
-A one-command install, fully automated from a git tag:
+Releases are automated from Conventional Commits:
 
-1. **Build** — `just bundle` → `Lux.app` (SPM under the hood).
-2. **Sign + notarize** — Developer ID signing + `notarytool`. (An Apple Developer
-   account is available, so notarized builds launch with no Gatekeeper warnings.)
-3. **Release** — GitHub Actions builds, signs, notarizes, and attaches `Lux.dmg`
-   to a GitHub Release on each tagged version.
-4. **Install** — Homebrew Cask, starting from a personal tap:
+1. **Version** — [release-please](.github/workflows/release-please.yml) maintains a
+   release PR; merging it bumps the version (`Info.plist`, `CHANGELOG.md`), tags
+   `vX.Y.Z`, and cuts a GitHub Release.
+2. **Build + sign** — the tag triggers [`release.yml`](.github/workflows/release.yml):
+   a universal `Lux.app` is Developer-ID signed, notarized (`notarytool`), stapled,
+   packaged as `Lux-<version>.dmg` with `checksums.txt`, and attached to the Release.
+3. **Publish** — the same workflow bumps the Homebrew Cask in
+   [`yipjunkai/homebrew-lux`](https://github.com/yipjunkai/homebrew-lux).
+4. **Install:**
 
    ```bash
    brew install --cask yipjunkai/lux/lux
    ```
 
-   Graduate to the official `homebrew/cask` (`brew install --cask lux`) once the
-   project is established.
+   (Graduate to the official `homebrew/cask` once the project is established.)
+
+### One-time setup
+
+The pipeline stays dormant until these repo secrets exist — the workflows no-op or
+fail loudly with a clear message until then:
+
+- **release-please** — a GitHub App (contents + pull-requests: write) exposed as
+  `RELEASE_PLEASE_APP_ID` / `RELEASE_PLEASE_APP_KEY`. Using an App rather than the
+  default token is what lets the release tag trigger `release.yml`.
+- **Signing / notarization** — `MACOS_CERTIFICATE_P12_BASE64`,
+  `MACOS_CERTIFICATE_PASSWORD`, `MACOS_SIGNING_IDENTITY`, `MACOS_NOTARY_KEY_BASE64`,
+  `MACOS_NOTARY_KEY_ID`, `MACOS_NOTARY_ISSUER_ID`.
 
 ---
 

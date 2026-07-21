@@ -5,8 +5,9 @@
   <key>CFBundleName</key><string>Lux</string>
   <key>CFBundleDisplayName</key><string>Lux</string>
   <key>CFBundleIdentifier</key><string>com.junkai.lux</string>
-  <key>CFBundleVersion</key><string>0.1</string>
-  <key>CFBundleShortVersionString</key><string>0.1</string>
+  <!-- Version is the release-please source of truth; both lines are bumped on release. -->
+  <key>CFBundleVersion</key><string>0.1.0</string><!-- x-release-please-version -->
+  <key>CFBundleShortVersionString</key><string>0.1.0</string><!-- x-release-please-version -->
   <key>CFBundleExecutable</key><string>Lux</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
