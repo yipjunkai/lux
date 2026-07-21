@@ -1,0 +1,55 @@
+name: Release Please
+
+# Maintains a "Release X.Y.Z" PR from Conventional Commits. Merging it bumps the
+# version (CHANGELOG.md, manifest, Info.plist), tags `vX.Y.Z`, and creates the
+# GitHub Release — which then triggers release.yml to build/sign/notarize the app.
+#
+# Auth is a GitHub App (not GITHUB_TOKEN) so the tag it creates can trigger the
+# downstream release.yml workflow. Until the app secrets are provisioned this job
+# no-ops (green) instead of failing — see the "Check app configured" gate.
+# Provision: create a GitHub App with contents:write + pull-requests:write, then
+# add repo secrets RELEASE_PLEASE_APP_ID and RELEASE_PLEASE_APP_KEY.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: release-please
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check app configured
+        id: cfg
+        env:
+          APP_ID: ${{ secrets.RELEASE_PLEASE_APP_ID }}
+        run: |
+          if [ -n "$APP_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::RELEASE_PLEASE_APP_ID is not set — skipping until the GitHub App is provisioned."
+          fi
+      - name: Mint app token
+        if: ${{ steps.cfg.outputs.ready == 'true' }}
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_KEY }}
+      - name: Run release-please
+        if: ${{ steps.cfg.outputs.ready == 'true' }}
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
