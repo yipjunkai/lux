@@ -7,19 +7,7 @@
 
 **Brightness control for every display on your Mac — built-in and external.** A native Swift menu-bar app that drives the real hardware backlight over DDC/CI, with a universal software fallback so _every_ screen gets a working slider. Global-hotkey macros. No Dock icon. Zero entitlements.
 
-```
-  ☀ Lux                             ⚙
-  ──────────────────────────────────
-  🖥  Built-in Retina           80 %
-     ●────────────────────
-     Hardware backlight
-
-  🖥  LG UltraFine 5K           45 %
-     ──────────●──────────
-     DDC/CI · hardware backlight
-  ──────────────────────────────────
-  ↻ Refresh                    ⏻ Quit
-```
+![Lux — a live brightness slider for every display, in the menu bar](docs/lux-menu-bar.png)
 
 > **ℹ️ Status** — Pre-1.0 and pre-first-release. What's here works today: live per-display brightness (built-in via `DisplayServices`, external via DDC/CI, gamma fallback), global-hotkey macros, and launch-at-login. Time-based automation is next. There's no notarized build yet — [build from source](#-install) to run it now; the Homebrew Cask goes live with the first release.
 
@@ -142,10 +130,6 @@ just         # list every recipe
 ## 📦 Releases
 
 Fully automated from [Conventional Commits](https://www.conventionalcommits.org/): [release-please](.github/workflows/release-please.yml) maintains a release PR; merging it tags `vX.Y.Z` and cuts a GitHub Release. The tag triggers [`release.yml`](.github/workflows/release.yml), which builds a universal `Lux.app`, Developer-ID signs + notarizes it (or falls back to an unsigned build), packages a `.dmg`, and auto-bumps the Cask in [`homebrew-lux`](https://github.com/yipjunkai/homebrew-lux). The required signing secrets are documented at the top of `release.yml`.
-
-## 🙏 Prior art & credit
-
-The DDC/CI approach is informed by [MonitorControl](https://github.com/MonitorControl/MonitorControl) and `m1ddc` — the reference implementations on macOS. Lux's focus is the menu-bar UX and the macro/automation layer on top of solid multi-display control.
 
 ## 🤝 Contributing
 
