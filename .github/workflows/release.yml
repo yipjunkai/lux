@@ -4,8 +4,9 @@ name: Release
 # signs + notarizes + staples it, packages a .dmg (with checksums), attaches it to
 # the GitHub Release, then bumps the Homebrew Cask in yipjunkai/homebrew-lux.
 #
-# Required repo secrets (see README -> Distribution). The build job fails fast with
-# a clear message if the signing secrets are absent.
+# Signing is OPTIONAL: with the MACOS_* secrets present the build is Developer ID
+# signed + notarized; without them it falls back to an UNSIGNED (ad-hoc) build
+# (Gatekeeper warns — users install with `--no-quarantine`). See README.
 #   MACOS_CERTIFICATE_P12_BASE64  base64 of the Developer ID Application .p12
 #   MACOS_CERTIFICATE_PASSWORD    the .p12 password
 #   MACOS_SIGNING_IDENTITY        e.g. "Developer ID Application: Name (TEAMID)"
@@ -44,17 +45,18 @@ jobs:
       dmg: ${{ steps.meta.outputs.dmg }}
       sha256: ${{ steps.pkg.outputs.sha256 }}
     steps:
-      - name: Preflight — required signing secrets
+      - name: Detect signing mode
+        id: mode
         env:
           CERT: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
           NOTARY: ${{ secrets.MACOS_NOTARY_KEY_BASE64 }}
         run: |
-          missing=
-          [ -z "$CERT" ] && missing="$missing MACOS_CERTIFICATE_P12_BASE64"
-          [ -z "$NOTARY" ] && missing="$missing MACOS_NOTARY_KEY_BASE64"
-          if [ -n "$missing" ]; then
-            echo "::error::Missing required signing secrets:$missing — see README -> Distribution."
-            exit 1
+          if [ -n "$CERT" ] && [ -n "$NOTARY" ]; then
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Signing secrets present — Developer ID signed + notarized build."
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No MACOS_* secrets — building UNSIGNED (ad-hoc). Users bypass Gatekeeper via 'brew install --cask --no-quarantine yipjunkai/lux/lux' or right-click Lux.app -> Open. Add the signing secrets for notarized builds."
           fi
 
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -89,6 +91,7 @@ jobs:
           lipo -info "$app/Contents/MacOS/Lux"
 
       - name: Import signing certificate
+        if: ${{ steps.mode.outputs.signed == 'true' }}
         env:
           CERT_B64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
           CERT_PW: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
@@ -106,6 +109,7 @@ jobs:
           rm -f "$RUNNER_TEMP/cert.p12"
 
       - name: Codesign (hardened runtime)
+        if: ${{ steps.mode.outputs.signed == 'true' }}
         env:
           IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
         run: |
@@ -114,6 +118,7 @@ jobs:
           codesign --verify --strict --verbose=2 build/Lux.app
 
       - name: Notarize + staple
+        if: ${{ steps.mode.outputs.signed == 'true' }}
         env:
           NOTARY_B64: ${{ secrets.MACOS_NOTARY_KEY_BASE64 }}
           NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
@@ -129,6 +134,15 @@ jobs:
             --wait
           xcrun stapler staple build/Lux.app
           rm -f "$RUNNER_TEMP/notary.p8"
+
+      - name: Ad-hoc sign (unsigned build)
+        if: ${{ steps.mode.outputs.signed == 'false' }}
+        run: |
+          set -euo pipefail
+          # No Developer ID — ad-hoc sign so the app runs on Apple Silicon. Not
+          # notarized: Gatekeeper warns on first launch until MACOS_* secrets exist.
+          codesign --force --sign - build/Lux.app
+          codesign --verify --verbose=2 build/Lux.app
 
       - name: Package DMG + checksums
         id: pkg
