@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import CoreGraphics
 
@@ -24,6 +25,13 @@ final class DisplayController: ObservableObject {
 
     private var dragging: Set<CGDirectDisplayID> = []
     private var observerRegistered = false
+    private var screenObserver: NSObjectProtocol?
+    private var pendingReload: DispatchWorkItem?
+
+    /// How long to wait after the last display-configuration notification before
+    /// re-scanning, so a dock/undock's burst of events collapses into one reload
+    /// and freshly-attached panels get a beat to come up before we read them.
+    private static let reloadDebounce: TimeInterval = 0.5
 
     /// Re-read every display. Called at launch and each time the popover opens —
     /// this is how external (DDC) displays catch up to outside changes.
@@ -40,6 +48,37 @@ final class DisplayController: ObservableObject {
         if !observerRegistered {
             observerRegistered = BuiltInBrightness.registerForChangeNotifications()
         }
+        registerForDisplayChanges()
+    }
+
+    /// Re-scan automatically when the display layout changes. On reconnect macOS
+    /// reassigns `CGDirectDisplayID`s and our cached DDC service handles go stale,
+    /// so a slider still bound to the old id silently drives nothing until the
+    /// next `reload()`. Observing `didChangeScreenParametersNotification` (connect,
+    /// disconnect, rearrange, resolution) lets Lux self-heal without the user
+    /// opening the popover or pressing Refresh.
+    private func registerForDisplayChanges() {
+        guard screenObserver == nil else { return }
+        screenObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            // Delivered on `.main` (OperationQueue.main), so we're on the main actor.
+            MainActor.assumeIsolated { self?.scheduleReloadAfterDisplayChange() }
+        }
+    }
+
+    /// Debounce the storm of notifications macOS emits during a single dock/undock
+    /// into one trailing `reload()`.
+    private func scheduleReloadAfterDisplayChange() {
+        pendingReload?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            print("[Lux] display configuration changed — re-scanning displays")
+            self?.reload()
+        }
+        pendingReload = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.reloadDebounce, execute: work)
     }
 
     func brightness(for id: CGDirectDisplayID) -> Double {
