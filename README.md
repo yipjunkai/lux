@@ -95,10 +95,6 @@ just restore             # undo any software (gamma) dimming
 - [ ] **Persist + restore** last-known levels across launches and reconnects.
 - [ ] **Notarized Homebrew Cask** release.
 
-## 🤔 Why Lux exists
-
-macOS gives the built-in display a brightness key and external monitors basically nothing — you're left poking at the clunky OSD buttons on the monitor itself. I wanted one menu-bar slider for _every_ screen, driving the real backlight where possible, plus hotkeys to snap between "bright desk" and "dark movie" without reaching for a mouse. DDC/CI makes that possible; the gamma fallback makes it universal.
-
 ## 🏗️ Architecture
 
 - **UI** — a SwiftUI popover hosted in an AppKit `NSStatusItem`; `LSUIElement`, launch-at-login via `SMAppService`.
